@@ -21,12 +21,13 @@ func New() *Paginator {
 
 // Paginator a builder doing pagination
 type Paginator struct {
-	cursor    Cursor
-	next      Cursor
-	keys      []string
-	tableKeys []string
-	limit     int
-	order     Order
+	cursor       Cursor
+	next         Cursor
+	keys         []string
+	tableKeys    []string
+	limit        int
+	order        Order
+	tabulateKeys bool
 }
 
 // SetAfterCursor sets paging after cursor
@@ -74,6 +75,7 @@ func (p *Paginator) Paginate(stmt *gorm.DB, out interface{}) *gorm.DB {
 
 // PaginateScanned paginates data
 func (p *Paginator) PaginateScanned(stmt *gorm.DB, out interface{}) *gorm.DB {
+	p.tabulateKeys = false
 	p.initOptions()
 	p.initTableKeys(stmt, out)
 	result := p.appendPagingQuery(stmt, out).Scan(out)
@@ -84,7 +86,6 @@ func (p *Paginator) PaginateScanned(stmt *gorm.DB, out interface{}) *gorm.DB {
 	}
 	return result
 }
-
 
 /* private */
 
@@ -103,8 +104,17 @@ func (p *Paginator) initOptions() {
 func (p *Paginator) initTableKeys(db *gorm.DB, out interface{}) {
 	table := db.NewScope(out).TableName()
 	for _, key := range p.keys {
-		p.tableKeys = append(p.tableKeys, fmt.Sprintf("%s.%s", table, strcase.ToSnake(key)))
+		// p.tableKeys = append(p.tableKeys, fmt.Sprintf("%s.%s", table, strcase.ToSnake(key)))
+		tableKey := ""
+		if p.tabulateKeys {
+			tableKey = fmt.Sprintf("%s.%s", table, strcase.ToSnake(key))
+		} else {
+			tableKey = fmt.Sprintf("%s", strcase.ToSnake(key))
+
+		}
+		p.tableKeys = append(p.tableKeys, tableKey)
 	}
+
 }
 
 func (p *Paginator) appendPagingQuery(stmt *gorm.DB, out interface{}) *gorm.DB {
