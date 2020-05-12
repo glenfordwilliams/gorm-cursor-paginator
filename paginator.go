@@ -72,6 +72,20 @@ func (p *Paginator) Paginate(stmt *gorm.DB, out interface{}) *gorm.DB {
 	return result
 }
 
+// PaginateScanned paginates data
+func (p *Paginator) PaginateScanned(stmt *gorm.DB, out interface{}) *gorm.DB {
+	p.initOptions()
+	p.initTableKeys(stmt, out)
+	result := p.appendPagingQuery(stmt, out).Scan(out)
+	// out must be a pointer or gorm will panic above
+	elems := reflect.ValueOf(out).Elem()
+	if elems.Kind() == reflect.Slice && elems.Len() > 0 {
+		p.postProcess(out)
+	}
+	return result
+}
+
+
 /* private */
 
 func (p *Paginator) initOptions() {
